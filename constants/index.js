@@ -1,37 +1,25 @@
+/**
+ * Database connection presets. Provide full connection URIs via environment variables.
+ * Example:
+ *   export MONGODB_CLUSTER_URI="mongodb://user:pass@host1,host2/db"
+ *   export MONGODB_STANDALONE_URI="mongodb://user:pass@host/db"
+ */
 const CONSTANTS = {
-    DATABASE: {
-        cluster: {
-            username: 'NAME',
-            password: 'PW',
-            host: 'Host1:port,host2:port',
-            authSource: 'dbName',
-            tlsOptions: {
-                tls: true,
-                tlsAllowInvalidHostnames: true,
-                tlsCAFile: '/path/to/file/mCA',
-                tlsCertificateKeyFile: '/path/to/file/mPrCert_Key.pem'
-            },
-            clientOptions: {
-                readPreference: 'primaryPreferred',
-            }
-        },
-        standalone: {
-            username: 'NAME',
-            password: 'PW',
-            host: 'host.de:27017',
-            authSource: 'dbName',
-            tlsOptions: {
-                tls: true,
-                tlsAllowInvalidHostnames: true,
-                tlsCAFile: '/path/to/file/mCA',
-                tlsCertificateKeyFile: '/path/to/file/mPrCert_Key.pem'
-            },
-            clientOptions: {
-                readPreference: 'primaryPreferred',
-                directConnection: true
-            }
-        }
+  DATABASE: {
+    cluster: {
+      connectionUri: process.env.MONGODB_CLUSTER_URI,
+      clientOptions: {
+        readPreference: process.env.MONGODB_READ_PREFERENCE || 'primaryPreferred'
+      }
+    },
+    standalone: {
+      connectionUri: process.env.MONGODB_STANDALONE_URI,
+      clientOptions: {
+        readPreference: process.env.MONGODB_READ_PREFERENCE || 'primaryPreferred',
+        directConnection: true
+      }
     }
+  }
 };
 
 module.exports = CONSTANTS;
