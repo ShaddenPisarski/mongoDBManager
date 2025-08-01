@@ -1,0 +1,22 @@
+{
+  "name": "mongodb",
+  "version": "1.0.0",
+  "description": "",
+  "main": "core/mongoConnect.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "oAI": "node openAI.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@openai/codex": "^0.1.2504172351",
+    "mongodb": "^6.5.0",
+    "openai": "^4.38.3",
+    "stream-json": "^1.9.1"
+  },
+  "devDependencies": {
+    "@openai/codex": "^0.10.0"
+  }
+}
