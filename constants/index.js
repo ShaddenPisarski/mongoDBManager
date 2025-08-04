@@ -1,25 +1,10 @@
-/**
- * Database connection presets. Provide full connection URIs via environment variables.
- * Example:
- *   export MONGODB_CLUSTER_URI="mongodb://user:pass@host1,host2/db"
- *   export MONGODB_STANDALONE_URI="mongodb://user:pass@host/db"
- */
-const CONSTANTS = {
-  DATABASE: {
-    cluster: {
-      connectionUri: process.env.MONGODB_CLUSTER_URI,
-      clientOptions: {
-        readPreference: process.env.MONGODB_READ_PREFERENCE || 'primaryPreferred'
-      }
-    },
-    standalone: {
-      connectionUri: process.env.MONGODB_STANDALONE_URI,
-      clientOptions: {
-        readPreference: process.env.MONGODB_READ_PREFERENCE || 'primaryPreferred',
-        directConnection: true
-      }
-    }
-  }
-};
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-module.exports = CONSTANTS;
+// Import the CJS constants for backward compatibility
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const { default: CONSTANTS } = await import(
+  `file://${__dirname}/index.cjs`
+);
+
+export default CONSTANTS;

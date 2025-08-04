@@ -12,20 +12,24 @@ Configure your MongoDB connection via environment variables before using:
 ## Example
 
 ```js
-const mongoConnect = require('./core/mongoConnect');
+// ES module usage
+import mongoConnect from './core/mongoConnect.js';
 
-(async() => {
-    const db = await mongoConnect('cluster');
-    // Switch databases/collections:
-    db.database = 'myDatabase';
-    db.collection = 'myCollection';
-    const collection = db.collection;
+(async () => {
+  const db = await mongoConnect('cluster');
+  // Switch databases/collections:
+  db.database = 'myDatabase';
+  db.collection = 'myCollection';
+  const collection = db.collection;
 
-    // ... perform operations ...
-    await collection.updateMany({tes: true}, {$set: {yes: 1}});
+  // ... perform operations ...
+  await collection.updateMany({ tes: true }, { $set: { yes: 1 } });
 
-    await db.closeConnection();
+  await db.closeConnection();
 })();
+
+// CommonJS usage (legacy):
+// const mongoConnect = require('./core/mongoConnect.cjs');
 ```
 
 ## Example: Encrypting Credentials
@@ -59,8 +63,9 @@ This will decrypt `.env.enc` to `.env`, install `dotenv`, and run `index.js` whi
 If you only know your server address and TLS file locations, you can generate a full URI and write it to an env file:
 
 ```js
-const fs = require('fs');
-const MongoManager = require('./core/MongoDB');
+// ES module usage
+import fs from 'fs';
+import MongoManager from './core/MongoDB.js';
 
 // Build a connection URI from minimal parameters
 const uri = MongoManager.buildConnectionUri({
@@ -79,4 +84,8 @@ const uri = MongoManager.buildConnectionUri({
 MongoManager.saveUriToEnvFile(uri, '.env', 'MONGODB_CLUSTER_URI');
 
 console.log('Connection URI generated and saved to .env.');
+
+// CommonJS usage (legacy):
+// const fs = require('fs');
+// const MongoManager = require('./core/MongoDB.cjs');
 ```

@@ -2,7 +2,9 @@
   "name": "mongodb",
   "version": "1.0.0",
   "description": "",
-  "main": "core/mongoConnect.js",
+  "type": "module",
+  "main": "core/mongoConnect.cjs",
+  "module": "core/mongoConnect.js",
   "scripts": {
     "test": "vitest",
     "oAI": "node openAI.js"

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import MongoManager from '../core/MongoDB';
+import MongoManager from '../core/MongoDB.js';
+import fs from 'fs';
+import { createRequire } from 'module';
 
 describe('MongoManager', () => {
   it('uses provided connectionUri when specified', () => {
@@ -85,10 +87,63 @@ describe('MongoManager', () => {
     connectSpy.mockRestore();
   });
 
-  it('ESM default import works', () => {
-    // full namespace import should have default equal to default import
-    const full = require('../core/MongoDB');
-    const { default: dflt } = full;
-    expect(dflt).toBe(full);
+
+  it('buildConnectionUri returns provided connectionUri', () => {
+    const custom = 'mongodb://custom';
+    expect(MongoManager.buildConnectionUri({ connectionUri: custom })).toBe(custom);
+  });
+
+  it('buildConnectionUri generates full URI with authSource and tls options', () => {
+    const uri = MongoManager.buildConnectionUri({
+      username: 'u',
+      password: 'p',
+      host: 'h:1234',
+      loginDatabase: 'db',
+      authSource: 'admin',
+      tlsOptions: {
+        tlsCAFile: '/path/a',
+        tlsCertificateKeyFile: '/path/b',
+        tlsKeyFile: '/path/key',
+        replicaSet: 'rs0'
+      }
+    });
+    expect(uri).toBe(
+      'mongodb://u:p@h:1234/db?authSource=admin&tls=true&tlsCAFile=%2Fpath%2Fa&tlsCertificateKeyFile=%2Fpath%2Fb&tlsKeyFile=%2Fpath%2Fkey&replicaSet=rs0'
+    );
+  });
+
+  it('saveUriToEnvFile writes the URI correctly', () => {
+    const tmp = '.tmp_env';
+    MongoManager.saveUriToEnvFile('mongodb://test', tmp, 'TEST_URI');
+    const content = fs.readFileSync(tmp, 'utf8');
+    expect(content).toBe('TEST_URI="mongodb://test"\n');
+    fs.unlinkSync(tmp);
+  });
+});
+
+// Ensure CJS entry-points work equivalently to ESM exports
+describe('CJS interop - MongoManager', () => {
+  const requireCJS = createRequire(import.meta.url);
+  const MongoManagerCJS = requireCJS('../core/MongoDB.cjs');
+
+  it('buildConnectionUri works via CJS import', () => {
+    const opts = { host: 'h', loginDatabase: 'db' };
+    expect(MongoManagerCJS.buildConnectionUri(opts)).toBe(
+      MongoManager.buildConnectionUri(opts)
+    );
+  });
+
+  it('constructor works via CJS import', () => {
+    const inst = new MongoManagerCJS({ username: 'u', password: 'p', host: 'h', loginDatabase: 'db' });
+    expect(inst.connectionUri).toBe('mongodb://u:p@h/db');
+  });
+});
+
+describe('CJS interop - mongoConnect', () => {
+  const requireCJS = createRequire(import.meta.url);
+  const mongoConnectCJS = requireCJS('../core/mongoConnect.cjs');
+
+  it('is a function via CJS import', () => {
+    expect(typeof mongoConnectCJS).toBe('function');
   });
 });
