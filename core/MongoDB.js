@@ -54,6 +54,11 @@ export default class MongoManager {
         }
     }
 
+    /**
+     * Establishes a connection to MongoDB using the configured client.
+     * @returns {Promise<void>}
+     * @throws {Error} When the connection fails
+     */
     async connect() {
         try {
             await this._client.connect();
@@ -64,33 +69,64 @@ export default class MongoManager {
         }
     }
 
+    /**
+     * Logs the current connection URI with credentials masked.
+     * @returns {void}
+     */
     debugLogConnectionString() {
         const masked = this.connectionUri.replace(/:\/\/(.*?)@/, '://***@');
         console.log('Current used connection string:', masked);
     }
 
+    /**
+     * Returns the underlying MongoClient instance.
+     * @type {import('mongodb').MongoClient}
+     */
     get client() {
         return this._client;
     }
 
+    /**
+     * Returns the active database instance.
+     * @type {import('mongodb').Db}
+     */
     get database() {
         return this._database;
     }
 
+    /**
+     * Sets the active database by name.
+     * @param {string} name Database name
+     * @returns {this}
+     */
     set database(name) {
         this._database = this._client.db(name);
         return this;
     }
 
+    /**
+     * Returns the active collection instance.
+     * @type {import('mongodb').Collection}
+     */
     get collection() {
         return this._collection;
     }
 
+    /**
+     * Sets the active collection by name.
+     * @param {string} name Collection name
+     * @returns {this}
+     */
     set collection(name) {
         this._collection = this._database.collection(name);
         return this;
     }
 
+    /**
+     * Updates client options and reconnects the MongoClient.
+     * @param {import('mongodb').MongoClientOptions} [newOptions] Additional client options
+     * @returns {Promise<void>}
+     */
     async updateConnectionString(newOptions = {}) {
         await this._client.close();
         this._client = new MongoClient(this.connectionUri, newOptions);
@@ -98,23 +134,43 @@ export default class MongoManager {
     }
 
     /**
-     * Stub for input validation – to be implemented.
-     * @param {*} input
+     * Stub for input validation – to be implemented for write operations.
+     * @param {*} input Arbitrary input to validate
+     * @returns {void}
      */
     validateInputWithSchemata(input) {
         // TODO: convert input according to schema definitions
     }
 
+    /**
+     * Closes the current MongoClient connection.
+     * @returns {Promise<void>}
+     */
     async closeConnection() {
         await this._client.close();
     }
 
+    /**
+     * Converts a hexadecimal string to a MongoDB ObjectId.
+     * @param {string} str Hexadecimal ObjectId string
+     * @returns {import('mongodb').ObjectId}
+     */
     makeStringToObjectId(str) {
         return new ObjectId(str);
     }
 
     /**
-     * Build a MongoDB connection URI.
+     * Builds a MongoDB connection URI string from provided options.
+     * @param {object} opts Options matching constructor params (excluding clientOptions)
+     * @param {string} [opts.connectionUri]
+     * @param {string} [opts.username]
+     * @param {string} [opts.password]
+     * @param {string} [opts.host]
+     * @param {string} [opts.loginDatabase]
+     * @param {string} [opts.authSource]
+     * @param {boolean} [opts.srv=false]
+     * @param {object} [opts.tlsOptions]
+     * @returns {string} The constructed MongoDB URI
      */
     static buildConnectionUri(opts = {}) {
         const {
@@ -150,10 +206,21 @@ export default class MongoManager {
         return uri;
     }
 
+    /**
+     * Returns the current connection URI string.
+     * @returns {string}
+     */
     getConnectionURI() {
         return this.connectionUri;
     }
 
+    /**
+     * Saves the given URI into an env file under the specified variable name.
+     * @param {string} uri Connection URI to save
+     * @param {string} [path='.env'] Destination file path
+     * @param {string} [envVar='MONGODB_CLUSTER_URI'] Environment variable key
+     * @returns {void}
+     */
     static saveUriToEnvFile(uri, path = '.env', envVar = 'MONGODB_CLUSTER_URI') {
         fs.writeFileSync(path, `${envVar}="${uri}"\n`, 'utf8');
     }
