@@ -236,6 +236,22 @@ export default class MongoManager {
     }
 
     /**
+     * Utility function for debugging purposes
+     * Used to check the curren connected instance
+     * @returns {Promise<unknown>}
+     */
+    async checkActiveHost() {
+        const topology = this._client.topology;
+        const servers = topology.description.servers;
+
+        for (const [host, serverDesc] of servers.entries()) {
+            if (serverDesc.type === 'RSPrimary' || serverDesc.type === 'RSSecondary' || serverDesc.type === 'Mongos') {
+                return host;
+            }
+        }
+    }
+
+    /**
      * Saves the given URI into an env file under the specified variable name.
      * @param {string} uri Connection URI to save
      * @param {string} [path='.env'] Destination file path
