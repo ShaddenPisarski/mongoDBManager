@@ -20,6 +20,9 @@ export default class MongoManager {
      * @param {object} [opts.clientOptions]
      */
     constructor(opts = {}) {
+        if (typeof opts !== 'object' || opts === null) {
+            throw new TypeError('Options must be an object');
+        }
         const {
             connectionUri,
             username,
@@ -33,6 +36,9 @@ export default class MongoManager {
             clientOptions = {}
         } = opts;
 
+        if (!connectionUri || typeof connectionUri !== 'string') {
+            throw new TypeError('connectionUri must be a string');
+        }
         if (connectionUri) {
             this.connectionUri = connectionUri;
             this._client = new MongoClient(this.connectionUri, clientOptions);
@@ -100,6 +106,9 @@ export default class MongoManager {
      * @returns {this}
      */
     set database(name) {
+        if (typeof name !== 'string') {
+            throw new TypeError('Database name must be a string');
+        }
         this._database = this._client.db(name);
         return this;
     }
@@ -118,6 +127,9 @@ export default class MongoManager {
      * @returns {this}
      */
     set collection(name) {
+        if (typeof name !== 'string') {
+            throw new TypeError('Collection name must be a string');
+        }
         this._collection = this._database.collection(name);
         return this;
     }
@@ -156,6 +168,12 @@ export default class MongoManager {
      * @returns {import('mongodb').ObjectId}
      */
     makeStringToObjectId(str) {
+        if (typeof str !== 'string') {
+            throw new TypeError('ObjectId input must be a string');
+        }
+        if (!/^[0-9a-fA-F]{24}$/.test(str)) {
+            throw new TypeError('Invalid ObjectId string');
+        }
         return new ObjectId(str);
     }
 
@@ -173,6 +191,9 @@ export default class MongoManager {
      * @returns {string} The constructed MongoDB URI
      */
     static buildConnectionUri(opts = {}) {
+        if (typeof opts !== 'object' || opts === null) {
+            throw new TypeError('Options must be an object');
+        }
         const {
             connectionUri,
             username,
@@ -222,6 +243,15 @@ export default class MongoManager {
      * @returns {void}
      */
     static saveUriToEnvFile(uri, path = '.env', envVar = 'MONGODB_CLUSTER_URI') {
+        if (typeof uri !== 'string') {
+            throw new TypeError('URI must be a string');
+        }
+        if (typeof path !== 'string') {
+            throw new TypeError('File path must be a string');
+        }
+        if (typeof envVar !== 'string') {
+            throw new TypeError('envVar must be a string');
+        }
         fs.writeFileSync(path, `${envVar}="${uri}"\n`, 'utf8');
     }
 }
