@@ -28,8 +28,8 @@ import mongoConnect from './core/mongoConnect.js';
   await db.closeConnection();
 })();
 
-// CommonJS usage (legacy):
-// const mongoConnect = require('./core/mongoConnect.cjs');
+// For legacy CJS code you can use dynamic import:
+// (async () => { const { default: mongoConnect } = await import('./core/mongoConnect.js'); })();
 ```
 
 ## Example: Encrypting Credentials
@@ -85,7 +85,6 @@ MongoManager.saveUriToEnvFile(uri, '.env', 'MONGODB_CLUSTER_URI');
 
 console.log('Connection URI generated and saved to .env.');
 
-// CommonJS usage (legacy):
-// const fs = require('fs');
-// const MongoManager = require('./core/MongoDB.cjs');
+// For legacy CJS code you can use dynamic import:
+// (async () => { const fs = require('fs'); const { default: MongoManager } = await import('./core/MongoDB.js'); })();
 ```

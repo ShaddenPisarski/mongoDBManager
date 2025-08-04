@@ -1,10 +1,23 @@
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 
-// Import the CJS constants for backward compatibility
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const { default: CONSTANTS } = await import(
-  `file://${__dirname}/index.cjs`
-);
-
-export default CONSTANTS;
+/**
+ * Database connection presets. Provide full connection URIs via environment variables.
+ */
+export default {
+  DATABASE: {
+    cluster: {
+      connectionUri: process.env.MONGODB_CLUSTER_URI,
+      clientOptions: {
+        readPreference: process.env.MONGODB_READ_PREFERENCE || 'primaryPreferred'
+      }
+    },
+    standalone: {
+      connectionUri: process.env.MONGODB_STANDALONE_URI,
+      clientOptions: {
+        readPreference: process.env.MONGODB_READ_PREFERENCE || 'primaryPreferred',
+        directConnection: true
+      }
+    }
+  }
+};

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import MongoManager from '../core/MongoDB.js';
 import fs from 'fs';
-import { createRequire } from 'module';
 
 describe('MongoManager', () => {
   it('uses provided connectionUri when specified', () => {
@@ -118,32 +117,5 @@ describe('MongoManager', () => {
     const content = fs.readFileSync(tmp, 'utf8');
     expect(content).toBe('TEST_URI="mongodb://test"\n');
     fs.unlinkSync(tmp);
-  });
-});
-
-// Ensure CJS entry-points work equivalently to ESM exports
-describe('CJS interop - MongoManager', () => {
-  const requireCJS = createRequire(import.meta.url);
-  const MongoManagerCJS = requireCJS('../core/MongoDB.cjs');
-
-  it('buildConnectionUri works via CJS import', () => {
-    const opts = { host: 'h', loginDatabase: 'db' };
-    expect(MongoManagerCJS.buildConnectionUri(opts)).toBe(
-      MongoManager.buildConnectionUri(opts)
-    );
-  });
-
-  it('constructor works via CJS import', () => {
-    const inst = new MongoManagerCJS({ username: 'u', password: 'p', host: 'h', loginDatabase: 'db' });
-    expect(inst.connectionUri).toBe('mongodb://u:p@h/db');
-  });
-});
-
-describe('CJS interop - mongoConnect', () => {
-  const requireCJS = createRequire(import.meta.url);
-  const mongoConnectCJS = requireCJS('../core/mongoConnect.cjs');
-
-  it('is a function via CJS import', () => {
-    expect(typeof mongoConnectCJS).toBe('function');
   });
 });

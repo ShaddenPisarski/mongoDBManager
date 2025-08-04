@@ -3,8 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
-  "main": "core/mongoConnect.cjs",
-  "module": "core/mongoConnect.js",
+  "main": "core/mongoConnect.js",
   "scripts": {
     "test": "vitest",
     "oAI": "node openAI.js"
