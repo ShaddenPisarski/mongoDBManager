@@ -119,3 +119,39 @@ describe('MongoManager', () => {
     fs.unlinkSync(tmp);
   });
 });
+
+describe('Type validations', () => {
+  it('constructor throws on non-object opts', () => {
+    expect(() => new MongoManager(null)).toThrow(/Options must be an object/);
+  });
+
+  it('constructor rejects non-string connectionUri', () => {
+    expect(() => new MongoManager({ connectionUri: 123 })).toThrow(/connectionUri must be a string/);
+  });
+
+  const inst = new MongoManager({ connectionUri: 'mongodb://x' });
+  it('database setter rejects non-string', () => {
+    expect(() => { inst.database = 42; }).toThrow(/Database name must be a string/);
+  });
+
+  it('collection setter rejects non-string', () => {
+    inst._database = inst.client.db();
+    expect(() => { inst.collection = {}; }).toThrow(/Collection name must be a string/);
+  });
+
+  it('makeStringToObjectId rejects non-string', () => {
+    expect(() => inst.makeStringToObjectId(123)).toThrow(/ObjectId input must be a string/);
+  });
+
+  it('makeStringToObjectId rejects invalid hex', () => {
+    expect(() => inst.makeStringToObjectId('zzzz')).toThrow(/Invalid ObjectId string/);
+  });
+
+  it('buildConnectionUri rejects non-object opts', () => {
+    expect(() => MongoManager.buildConnectionUri(null)).toThrow(/Options must be an object/);
+  });
+
+  it('saveUriToEnvFile rejects non-string uri', () => {
+    expect(() => MongoManager.saveUriToEnvFile(456)).toThrow(/URI must be a string/);
+  });
+});

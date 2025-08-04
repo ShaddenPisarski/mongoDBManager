@@ -36,7 +36,7 @@ export default class MongoManager {
             clientOptions = {}
         } = opts;
 
-        if (!connectionUri || typeof connectionUri !== 'string') {
+        if (connectionUri !== undefined && connectionUri !== null && typeof connectionUri !== 'string') {
             throw new TypeError('connectionUri must be a string');
         }
         if (connectionUri) {
