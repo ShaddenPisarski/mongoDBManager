@@ -42,8 +42,7 @@ export default class MongoManager {
         if (connectionUri) {
             this.connectionUri = connectionUri;
             this._client = new MongoClient(this.connectionUri, clientOptions);
-        }
-        else {
+        } else {
             this.connectionUri = MongoManager.buildConnectionUri({
                 username,
                 password,
@@ -58,6 +57,16 @@ export default class MongoManager {
                 ...clientOptions
             });
         }
+        
+        // Proxy to allow direct collection access: manager.myCollectionName
+        return new Proxy(this, {
+            get(target, prop, receiver) {
+                if (typeof prop === 'string' && !(prop in target) && target._database) {
+                    return target._database.collection(prop);
+                }
+                return Reflect.get(target, prop, receiver);
+            }
+        });
     }
 
     /**
