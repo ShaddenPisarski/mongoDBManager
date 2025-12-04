@@ -1,5 +1,5 @@
-import MongoWrapper from './MongoDB.js';
-import CONSTANTS from '../constants/index.js';
+import MongoWrapper from './MongoDB.mjs';
+import CONSTANTS from '../constants/index.mjs';
 
 /**
  * Initialize and connect to the specified database preset.

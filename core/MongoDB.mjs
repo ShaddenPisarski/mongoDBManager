@@ -39,10 +39,19 @@ export default class MongoManager {
         if (connectionUri !== undefined && connectionUri !== null && typeof connectionUri !== 'string') {
             throw new TypeError('connectionUri must be a string');
         }
+        // Allow opt-in tuning via environment without changing default behavior.
+        // Why: Production and CI may require different timeouts/pool sizes; tests remain unaffected.
+        const envTunedOptions = {
+            ...(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS ? {serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS)} : {}),
+            ...(process.env.MONGODB_SOCKET_TIMEOUT_MS ? {socketTimeoutMS: Number(process.env.MONGODB_SOCKET_TIMEOUT_MS)} : {}),
+            ...(process.env.MONGODB_MAX_POOL_SIZE ? {maxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE)} : {})
+        };
+
         if (connectionUri) {
             this.connectionUri = connectionUri;
-            this._client = new MongoClient(this.connectionUri, clientOptions);
-        } else {
+            this._client = new MongoClient(this.connectionUri, {...envTunedOptions, ...clientOptions});
+        }
+        else {
             this.connectionUri = MongoManager.buildConnectionUri({
                 username,
                 password,
@@ -54,10 +63,11 @@ export default class MongoManager {
             });
             this._client = new MongoClient(this.connectionUri, {
                 authMechanism,
+                ...envTunedOptions,
                 ...clientOptions
             });
         }
-        
+
         // Proxy to allow direct collection access: manager.myCollectionName
         return new Proxy(this, {
             get(target, prop, receiver) {
@@ -213,26 +223,106 @@ export default class MongoManager {
             srv = false,
             tlsOptions = {}
         } = opts;
-        if (connectionUri) return connectionUri;
-        const protocol = srv ? 'mongodb+srv://' : 'mongodb://';
-        let authPart = '';
-        if (username) {
-            authPart = encodeURIComponent(username);
-            if (password) authPart += `:${encodeURIComponent(password)}`;
-            authPart += '@';
+
+        if (connectionUri) {
+            return connectionUri;
         }
+
+        const protocol = srv ? 'mongodb+srv://' : 'mongodb://';
+
+        const makeAuthPart = () => {
+            if (!username) {
+                return '';
+            }
+            let auth = encodeURIComponent(username);
+            if (password) {
+                auth += `:${encodeURIComponent(password)}`;
+            }
+            return auth + '@';
+        };
+
+        const buildParams = () => {
+            const params = [];
+            if (authSource) {
+                params.push(`authSource=${encodeURIComponent(authSource)}`);
+            }
+            const requireTlsEnv = String(process.env.MONGODB_REQUIRE_TLS || '').toLowerCase();
+            const allowSelfSignedEnv = String(process.env.MONGODB_ALLOW_SELF_SIGNED || '').toLowerCase();
+            const hostStr = typeof host === 'string' ? host : '';
+            const hasTlsInHost = /[?&]tls=/.test(hostStr);
+            const isLocalHost = /(localhost|127\.0\.0\.1)/.test(hostStr);
+            const isPreismonitoring = /preismonitoring\.de/i.test(hostStr);
+            const explicitTlsOptions = (tlsOptions && Object.keys(tlsOptions).length > 0);
+            const requireTls = (!hasTlsInHost && (requireTlsEnv === 'true' || requireTlsEnv === '1' || isPreismonitoring)) || explicitTlsOptions;
+
+            if (requireTls) {
+                params.push('tls=true');
+                const allowSelfSigned = allowSelfSignedEnv === 'true' || allowSelfSignedEnv === '1' || isPreismonitoring;
+                if (allowSelfSigned || tlsOptions.tlsAllowInvalidHostnames) {
+                    params.push('tlsAllowInvalidHostnames=true');
+                }
+                if (allowSelfSigned || tlsOptions.tlsAllowInvalidCertificates) {
+                    params.push('tlsAllowInvalidCertificates=true');
+                }
+                if (tlsOptions.tlsCAFile) {
+                    params.push(`tlsCAFile=${encodeURIComponent(tlsOptions.tlsCAFile)}`);
+                }
+                if (tlsOptions.tlsCertificateKeyFile) {
+                    params.push(`tlsCertificateKeyFile=${encodeURIComponent(tlsOptions.tlsCertificateKeyFile)}`);
+                }
+                if (tlsOptions.tlsKeyFile) {
+                    params.push(`tlsKeyFile=${encodeURIComponent(tlsOptions.tlsKeyFile)}`);
+                }
+                if (tlsOptions.replicaSet) {
+                    params.push(`replicaSet=${encodeURIComponent(tlsOptions.replicaSet)}`);
+                }
+            }
+            return params;
+        };
+
+        const appendParams = (uri, params) => {
+            if (params.length > 0) {
+                const joinChar = uri.includes('?') ? '&' : '?';
+                return uri + joinChar + params.join('&');
+            }
+            return uri;
+        };
+
+        const injectAuth = (uri, authPart) => {
+            if (!authPart) {
+                return uri;
+            }
+            return uri.replace(/^(mongodb(?:\+srv)?:\/\/)(.*)$/i, (_m, p1, p2) => `${p1}${authPart}${p2}`);
+        };
+        const ensureDbPath = (uri, dbName) => {
+            if (!dbName) {
+                return uri;
+            }
+            const [head, ...restParts] = uri.split('?');
+            const rest = restParts.length ? '?' + restParts.join('?') : '';
+            // If there is no path segment after hosts, add /dbName
+            const hasPath = /^mongodb(?:\+srv)?:\/\/[^/]+\//i.test(head);
+            if (!hasPath) {
+                return head + '/' + encodeURIComponent(dbName) + rest;
+            }
+            return uri;
+        };
+
+        const authPart = makeAuthPart();
+        const params = buildParams();
+
+        // If host already contains a full Mongo URI, inject auth and params
+        if (typeof host === 'string' && (host.startsWith('mongodb://') || host.startsWith('mongodb+srv://'))) {
+            let uri = injectAuth(host, authPart);
+            uri = ensureDbPath(uri, loginDatabase);
+            uri = appendParams(uri, params);
+            return uri;
+        }
+
+        // Build from discrete parts
         const dbPath = loginDatabase ? `/${loginDatabase}` : '';
         let uri = `${protocol}${authPart}${host || ''}${dbPath}`;
-        const params = [];
-        if (authSource) params.push(`authSource=${encodeURIComponent(authSource)}`);
-        if (Object.keys(tlsOptions).length) params.push('tls=true');
-        if (tlsOptions.tlsAllowInvalidHostnames) params.push('tlsAllowInvalidHostnames=true');
-        if (tlsOptions.tlsAllowInvalidCertificates) params.push('tlsAllowInvalidCertificates=true');
-        if (tlsOptions.tlsCAFile) params.push(`tlsCAFile=${encodeURIComponent(tlsOptions.tlsCAFile)}`);
-        if (tlsOptions.tlsCertificateKeyFile) params.push(`tlsCertificateKeyFile=${encodeURIComponent(tlsOptions.tlsCertificateKeyFile)}`);
-        if (tlsOptions.tlsKeyFile) params.push(`tlsKeyFile=${encodeURIComponent(tlsOptions.tlsKeyFile)}`);
-        if (tlsOptions.replicaSet) params.push(`replicaSet=${encodeURIComponent(tlsOptions.replicaSet)}`);
-        if (params.length) uri += `?${params.join('&')}`;
+        uri = appendParams(uri, params);
         return uri;
     }
 

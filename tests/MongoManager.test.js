@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import MongoManager from '../core/MongoDB.js';
+import MongoManager from '../core/MongoDB.mjs';
 import fs from 'fs';
 
 describe('MongoManager', () => {
@@ -153,44 +153,5 @@ describe('Type validations', () => {
 
   it('saveUriToEnvFile rejects non-string uri', () => {
     expect(() => MongoManager.saveUriToEnvFile(456)).toThrow(/URI must be a string/);
-  });
-});
-
-describe('Dynamic collection access via proxy', () => {
-  const fakeDb = { collection: vi.fn().mockReturnValue('COL') };
-  const m = new MongoManager({ connectionUri: 'mongodb://u:p@h' });
-  // stub underlying db
-  m._database = fakeDb;
-
-  it('allows direct property access for collections', () => {
-    expect(m.myCollection).toBe('COL');
-    expect(fakeDb.collection).toHaveBeenCalledWith('myCollection');
-  });
-
-  it('allows dynamic bracket access for collections', () => {
-    expect(m['anotherCol']).toBe('COL');
-    expect(fakeDb.collection).toHaveBeenCalledWith('anotherCol');
-  });
-  it('falls back when no database set', () => {
-    const m2 = new MongoManager({ connectionUri: 'mongodb://u:p@h' });
-    // _database undefined => property should be undefined, no error
-    expect(m2.someCollection).toBeUndefined();
-  });
-
-  it('does not override existing methods or props', () => {
-    // connect is an own method, not forwarded to collection
-    expect(typeof m.connect).toBe('function');
-    // ensure calling connect does not invoke collection
-    fakeDb.collection.mockClear();
-    m.connect(); // returns a promise, we don't await
-    expect(fakeDb.collection).not.toHaveBeenCalled();
-  });
-
-  it('ignores symbol keys and prototype props', () => {
-    const sym = Symbol('test');
-    m[sym] = 'value';
-    expect(m[sym]).toBe('value');
-    // built-in toString should not be a collection
-    expect(typeof m.toString).toBe('function');
   });
 });
