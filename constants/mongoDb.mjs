@@ -21,4 +21,4 @@ const MONGOWRAPPER_CONSTANTS = {
     }
 };
 
-module.exports = MONGOWRAPPER_CONSTANTS;
+export default MONGOWRAPPER_CONSTANTS;

@@ -12,9 +12,7 @@ import CONSTANTS from '../constants/index.mjs';
  * @returns {Promise<MongoManager>}
  */
 export default async function mongoConnect(database = 'cluster') {
-  const MongoManager = (await import('./MongoDB.js')).default;
-  const { default: CONSTANTS } = await import('../constants/index.js');
-  const dbInstance = new MongoManager(CONSTANTS.DATABASE[database]);
+  const dbInstance = new MongoWrapper(CONSTANTS.DATABASE[database]);
   await dbInstance.connect();
   return dbInstance;
 }
